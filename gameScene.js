@@ -1,40 +1,80 @@
+
+
 class gameScene extends Phaser.Scene{
 constructor(){
-  super('gameScene');
+  super({
+   key: 'gameScene',
+
+   autoStart: false,
+   clearBeforeRender: false,
+  
+  });
+
+  
 }
 
+
+
 preload() {
-  // Load your assets here (adjust paths to your files)
+
+ 
   
-  this.load.image('background', 'assets/background.png'); 
-  this.load.image('hero', 'assets/hero.png');
-  this.load.image('yosun', 'assets/yosun.png');
-  this.load.image('seaweed', 'assets/seaweed1.png');
-  this.load.image('oyster', 'assets/oyster.png');
-  this.load.image('coin', 'assets/coin.png');
-  this.load.image('enemy1', 'assets/enemy1.png');
-  this.load.image('enemy2', 'assets/enemy2.png');
-  this.load.image('enemy3', 'assets/enemy3.png');
-  this.load.image('enemy4', 'assets/enemy4.png');
-  this.load.image('enemy5', 'assets/enemy5.png');
-  this.load.image('live', 'assets/live.png');
-  this.load.image('live-empty', 'assets/live-empty.png');
-  this.load.image('jellyfish', 'assets/jeyyfish.png');
-  this.load.image('bubble', 'assets/bubbles.webp');
-  this.load.spritesheet('shark', 'assets/shark/Walk.png', {
-    frameWidth: 48,
-    frameHeight: 48
-  });
+const assets = LEVEL_CONFIG;
+
+  // Background
+  this.load.image(assets.background.key, assets.background.path);
+
+
+  // Enemies
+  for (const key in assets.enemies) {
+    const enemy = assets.enemies[key];
+    if (enemy.isSpriteSheet) {
+      this.load.spritesheet(enemy.key, enemy.path, {
+        frameWidth: enemy.frameWidth,
+        frameHeight: enemy.frameHeight
+      });
+    } else {
+      this.load.image(enemy.key, enemy.path);
+    }
+  }
+
+  // Collectibles
+  for (const key in assets.collectibles) {
+    const item = assets.collectibles[key];
+    this.load.image(item.key, item.path);
+  }
+
+  // Misc
+  for (const key in assets.misc) {
+    const item = assets.misc[key];
+    this.load.image(item.key, item.path);
+  }
+
+  const buttons = LEVEL_CONFIG.ui.buttons;
+  for (const key in buttons) {
+  this.load.image(buttons[key].key, buttons[key].path);
+  }
   
 }
 
 create() {
+
+   this.bg = this.add.tileSprite(0, 0,  this.scale.width, this.scale.height, LEVEL_CONFIG.background.key).setOrigin(0);
+  const isMobile = this.scale.width < 900;
  
+  window.addEventListener('resize', () => this.resizeGame());
+
   
-  this.bg = this.add.tileSprite(0, 0,  this.scale.width, this.scale.height, 'background').setOrigin(0);
+  
  
-    this.player = this.physics.add.sprite(300, this.scale.height / 2, 'hero');
+ 
+    this.player = this.physics.add.sprite(this.scale.width * 0.3, this.scale.height * 0.5, LEVEL_CONFIG.misc.hero.key).setScale(isMobile ? LEVEL_CONFIG.misc.hero.scale * 0.6 : LEVEL_CONFIG.misc.hero.scale);
     this.player.setCollideWorldBounds(true);
+
+    this.playerVerticalSpeed = 0;
+    this.playerVerticalAcceleration = 50; 
+    this.playerVerticalMaxSpeed = 600;    
+    this.playerVerticalDamping = 0.9; 
 
   
   //Enemies
@@ -43,9 +83,10 @@ create() {
 
   this.physics.add.overlap(this.player, this.enemies, this.hitEnemy, null, this);
 
-  this.enemySpeed = 300;
-  this.speedIncreaseRate = 20;
+  this.speedMultiplier = 1.0;
+  this.baseSpeed = 300;
   this.maxSpeed = 800;
+
   const MAX_ENEMIES = 5; 
   const MIN_GAP = 150;
 
@@ -74,17 +115,19 @@ create() {
 
   if (!canSpawn) return;
 
+
         const safeZone = 100;
         const laneY = Phaser.Utils.Array.GetRandom(lanes);
         //const y = Phaser.Math.Between(safeZone + 10, this.scale.height - 50);
         const key = Phaser.Utils.Array.GetRandom(this.enemyKeys);
-        const enemy = this.enemies.create(this.scale.width + 50, laneY, key);
+        const config = LEVEL_CONFIG.enemies[key];
+
+        const enemy = this.enemies.create(this.scale.width + 50, laneY, config.key);
         enemy.body.allowGravity = false;
-        enemy.setVelocityX(-this.enemySpeed);
+        enemy.setVelocityX(-config.speed * this.speedMultiplier);
         enemy.setDepth(1);
         enemy.setImmovable(true);
-        enemy.setScale(1.2); 
-
+        enemy.setScale(isMobile ? config.scale * 0.6 : config.scale); 
       
     };
 
@@ -97,20 +140,21 @@ create() {
 
 });
 
-
-
-
+//SHARKS
 
 this.spawnShark = () => {
+
+  
+  const sharkConfig = LEVEL_CONFIG.enemies.shark;
   const y = Phaser.Math.Between(100, this.scale.height - 100);
   const shark = this.enemies.create(this.scale.width + 50, y, 'shark');
-  shark.play('shark-swim');
-  shark.setVelocityX(-600);
-  shark.setFlipX(true);
+  shark.play(sharkConfig.anim);
+  shark.setVelocityX(-sharkConfig.speed * this.speedMultiplier);
+  shark.setFlipX(sharkConfig.flipX);
   shark.body.allowGravity = false;
   shark.setImmovable(true);
   shark.setDepth(2);
-  shark.setScale(4); 
+  shark.setScale(isMobile ? sharkConfig.scale * 0.6 : sharkConfig.scale); 
 };
 
 this.time.delayedCall(20000, () => {  
@@ -125,7 +169,7 @@ this.time.delayedCall(20000, () => {
 
 this.time.delayedCall(19500, () => {
   const warningText = this.add.text(this.scale.width / 2, 100, 'SHARKS INCOMING!', {
-    fontFamily: 'Pixelify Sans',
+    fontFamily: this.scale.width < 800 ? '24px' : '40px',
     fontSize: '50px',
     fill: '#ff0000'
   }).setOrigin(0.5);
@@ -134,12 +178,19 @@ this.time.delayedCall(19500, () => {
     warningText.destroy();
   });
 
-  this.time.addEvent({
+  const blinkTimer = this.time.addEvent({
   delay: 400,
   loop: true,
   callback: () => {
-    warningText.visible = !warningText.visible;
+    if (warningText.active) {
+      warningText.visible = !warningText.visible;
+    }
   }
+});
+
+this.time.delayedCall(2000, () => {
+  warningText.destroy();
+  blinkTimer.remove(); // stop blinking after 2 seconds
 });
 
 });
@@ -150,10 +201,12 @@ this.time.delayedCall(19500, () => {
 
 this.spawnJellyfish = () => {
   
+  const key = 'jellyfish';
+  const jellyConfig = LEVEL_CONFIG.enemies[key];
   const y = Phaser.Math.Between(100, this.scale.height - 100);
-  const jellyfish = this.enemies.create(this.scale.width + 50, y, 'jellyfish').setScale(0.16);
+  const jellyfish = this.enemies.create(this.scale.width + 50, y, jellyConfig.key).setScale(isMobile ? jellyConfig.scale * 0.6 : jellyConfig.scale);
 
-  jellyfish.setVelocityX(-this.enemySpeed);
+  jellyfish.setVelocityX(-jellyConfig.speed * this.speedMultiplier);
   jellyfish.setImmovable(true);
   jellyfish.setDepth(1);
 
@@ -182,9 +235,9 @@ this.time.addEvent({
 this.time.addEvent({
   delay: 5000, 
   callback: () => {
-    if (this.enemySpeed < this.maxSpeed) {
-      this.enemySpeed += this.speedIncreaseRate;
-      console.log("Enemy speed:", this.enemySpeed);
+    if (this.baseSpeed * this.baseSpeed < this.maxSpeed) {
+      this.speedMultplier += this.speedIncreaseRate;
+       console.log('Speed multiplier increased:', this.speedMultiplier.toFixed(2));
     }
   },
   callbackScope: this,
@@ -201,13 +254,13 @@ this.time.addEvent({
   const x = this.scale.width + 50; 
   const y = this.scale.height + 30; 
 
-  const seaweed = this.seaweedGroup.create(x, y, 'seaweed');
+  const seaweed = this.seaweedGroup.create(x, y, LEVEL_CONFIG.misc.seaweed.key);
   seaweed.setOrigin(0, 1); 
   seaweed.setImmovable(true);
   seaweed.body.allowGravity = false;
-  seaweed.setVelocityX(-this.enemySpeed); 
+  seaweed.setVelocityX(-this.baseSpeed * this.speedMultiplier); 
   seaweed.setDepth(0); 
-  seaweed.setScale(0.8); 
+  seaweed.setScale(isMobile ? 0.5 : 0.8); 
 };
 
 this.time.addEvent({
@@ -223,11 +276,11 @@ this.time.addEvent({
 
   //Lives
 
-  this.lives = 3;
+  this.lives = 5;
   this.lifeIcons = [];
 
-  for (let i = 0; i < 3; i++) {
-    const icon = this.add.image(70 + i * 100, 50, 'live').setScale(1);
+  for (let i = 0; i < 5; i++) {
+    const icon = this.add.image(70 + i * 100, 50, LEVEL_CONFIG.misc.live.key).setScale(isMobile ? LEVEL_CONFIG.misc.live.scale * 0.7 : LEVEL_CONFIG.misc.live.scale);
     this.lifeIcons.push(icon);
 }
 
@@ -238,18 +291,68 @@ this.time.addEvent({
   this.coins = this.physics.add.group();
   this.coinCollider= this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
 
-  this.spawnCoin = () => {
-  const y = Phaser.Math.Between(100, this.scale.height - 50);  
-  const coin = this.coins.create(this.scale.width + 50, y, 'coin');
-  coin.setVelocityX(-this.enemySpeed);
-  coin.body.allowGravity = false;
-  coin.setImmovable(true);
-  coin.setScale(0.5);
+  
+
+this.spawnCoinPattern = () => {
+  const coinConfig = LEVEL_CONFIG.collectibles.coin;
+  const pattern = Phaser.Math.Between(2, 4); // 1 = single, 2 = line, 3 = stack
+  
+  const baseX = this.scale.width + 50;
+
+  const safeZoneTop = 300;
+  const safeZoneBottom = this.scale.height - 100;
+  let baseY;
+  do{
+    baseY = Phaser.Math.Between(100, this.scale.height - 100);
+  } while (baseY < safeZoneTop || baseY > safeZoneBottom);
+
+
+  const spacing = 40; // space between coins
+  const coinCount = Phaser.Math.Between(3, 6); // number of coins in a pattern
+
+  for (let i = 0; i < coinCount; i++) {
+    let x = baseX;
+    let y = baseY;
+
+    if (pattern === 2) {
+      // horizontal line
+      x += i * spacing;
+    } else if (pattern === 3) {
+      // vertical stack
+      x += i * spacing;
+       y -= i * spacing;
+    } else if (pattern === 4) {
+       x += i * spacing;
+      y += (i % 2 === 0) ? -spacing : spacing;
+    }
+
+    const enemyOverlap = this.enemies.getChildren().some(enemy => {
+      const distX = Math.abs(enemy.x - x);
+      const distY = Math.abs(enemy.y - y);
+      const minDistX = enemy.width / 2 + coinConfig.width / 2 + 20; // 20px buffer
+      const minDistY = enemy.height / 2 + coinConfig.height / 2 + 20;
+      return distX < minDistX && distY < minDistY;
+    });
+
+    if (!enemyOverlap && y > safeZoneTop && y < safeZoneBottom) {
+    const coin = this.coins.create(x, y, coinConfig.key);
+    coin.setVelocityX(-this.baseSpeed * this.speedMultiplier);
+    coin.body.allowGravity = false;
+    coin.setImmovable(true);
+    coin.setScale(isMobile ? coinConfig.scale * 0.6 : coinConfig.scale);
+    } else {
+
+    }
+  }
+
+
+
 };
+
 
 this.time.addEvent({
   delay: 1500, 
-  callback: this.spawnCoin,
+  callback: this.spawnCoinPattern,
   callbackScope: this,
   loop: true
 });
@@ -257,11 +360,16 @@ this.time.addEvent({
   this.score = 0;
   this.scoreText = this.add.text(this.scale.width - 50, 20, 'Points: 0', {
   fontFamily: 'Pixelify Sans',  
-  fontSize: '40px',
+  fontSize: this.scale.width < 800 ? '24px' : '40px',
   fill: '#ffff00',
   stroke: '#000',
   strokeThickness: 3
-}).setOrigin(1, 0);;
+}).setOrigin(1, 0).setPosition(this.scale.width - 90, this.scale.height * 0.03);
+
+
+
+
+
 
 
 //shooting bubbles
@@ -284,8 +392,8 @@ this.input.keyboard.on('keydown-SPACE', () => {
 this.maxEnergy = 10;
   this.currentEnergy = this.maxEnergy;
   this.pixelSize = 30;
-  this.energyBarX = 800;
-  this.energyBarY = 20;
+  this.energyBarX = this.scale.width * 0.5 - (this.maxEnergy * (this.pixelSize + 2)) / 2;
+  this.energyBarY = this.scale.height * 0.03;
   this.energyBar = this.add.graphics();
 
   this.drawEnergyBar = function() {
@@ -318,12 +426,12 @@ this.maxEnergy = 10;
   }, null, this);
   this.spawnOyster = () => {
 
-    const y = Phaser.Math.Between(100, this.scale.height - 100);
-  const oyster = this.oysters.create(this.scale.width + 50, y, 'oyster').setScale(0.16);
+  const oysterConf = LEVEL_CONFIG.collectibles.oyster;
+  const y = Phaser.Math.Between(100, this.scale.height - 100);
+  const oyster = this.oysters.create(this.scale.width + 50, y, oysterConf.key).setScale(isMobile ? oysterConf.scale * 0.6 : oysterConf.scale);
 
-  oyster.setVelocityX(-this.enemySpeed);
+  oyster.setVelocityX(-this.baseSpeed * this.speedMultiplier);
   oyster.setImmovable(true);
-  oyster.setScale(0.7);
   oyster.body.allowGravity = false;
 
   };
@@ -336,12 +444,65 @@ this.maxEnergy = 10;
 });
   
 
+//Speeding up
+this.time.addEvent({
+  delay: 5000,
+  callback: () => {
+    this.speedMultiplier += 0.1;
+    console.log('Speed multiplier increased:', this.speedMultiplier.toFixed(2));
+  },
+  callbackScope: this,
+  loop: true
+});
 
+if (this.sys.game.device.input.touch) {
+  this.setupTouchControls();
+}
 
+}
 
+setupTouchControls() {
+  const isMobile = this.scale.width < 900;
+  const buttons = LEVEL_CONFIG.ui.buttons;
 
+  this.touchInput = {
+    up: false,
+    down: false,
+    left: false,
+    right: false
+  };
 
+  const createButton = (config, direction) => {
+    const btn = this.add.image(config.x, config.y, config.key)
+      .setInteractive()
+      .setScale(isMobile ? config.scale * 0.6 : config.scale)
+      .setScrollFactor(0)
+      .setDepth(100)
+      .setAlpha(0.8);
 
+    btn.on('pointerdown', () => this.touchInput[direction] = true);
+    btn.on('pointerup', () => this.touchInput[direction] = false);
+    btn.on('pointerout', () => this.touchInput[direction] = false);
+
+    return btn;
+  };
+
+  this.btnUp = createButton(buttons.up, 'up');
+  this.btnDown = createButton(buttons.down, 'down');
+  this.btnLeft = createButton(buttons.left, 'left');
+  this.btnRight = createButton(buttons.right, 'right');
+
+  // Shoot button (fire instantly on press)
+
+    this.btnShoot = this.add.image(buttons.shoot.x, buttons.shoot.y, buttons.shoot.key)
+    .setInteractive()
+    .setScale(buttons.shoot.scale)
+    .setScrollFactor(0)
+    .setDepth(100)
+    .setAlpha(0.8)
+    .setPosition(this.scale.width - 150, this.scale.height - 170);
+
+  this.btnShoot.on('pointerdown', () => this.shootBubble());
 
 }
 
@@ -355,7 +516,7 @@ hitEnemy(player, enemy) {
     this.lives--;
 
      if (this.lifeIcons[this.lives]) {
-        this.lifeIcons[this.lives].setTexture('live-empty');
+        this.lifeIcons[this.lives].setTexture(LEVEL_CONFIG.misc.liveEmpty.key);
     }
 
     if (this.lives <= 0){
@@ -386,14 +547,36 @@ hitEnemy(player, enemy) {
     
     return;  
   }
-  const bubble = this.bubbles.create(this.player.x + 30, this.player.y, 'bubble');
-  bubble.setVelocityX(300);
-  bubble.setScale(0.2);
+  const bubbleConf = LEVEL_CONFIG.misc.bubble;
+  const bubble = this.bubbles.create(this.player.x + 30, this.player.y, bubbleConf.key);
+  bubble.setVelocityX(bubbleConf.speed);
+  bubble.setScale(bubbleConf.scale);
   bubble.setCollideWorldBounds(false);
   bubble.body.allowGravity = false;
   this.currentEnergy--;
   this.drawEnergyBar();
  
+}
+
+resizeGame(gameSize, baseSize, displaySize, resolution) {
+  const width = gameSize ? gameSize.width : this.scale.width;
+  const height = gameSize ? gameSize.height : this.scale.height;
+
+  
+
+  if (this.bg) {
+    this.bg.setSize(width, height);
+  }
+
+if (this.btnUp) this.btnUp.setPosition(this.scale.width - 80, this.scale.height - 200);
+if (this.btnDown) this.btnDown.setPosition(this.scale.width - 80, this.scale.height - 100);
+if (this.btnLeft) this.btnLeft.setPosition(80, this.scale.height - 100);
+if (this.btnRight) this.btnRight.setPosition(160, this.scale.height - 100);
+if (this.btnShoot) this.btnShoot.setPosition(width - 100, height - 150);
+
+
+  if (this.scoreText) this.scoreText.setPosition(width - 90, height * 0.03);
+  if (this.energyBar) this.drawEnergyBar(); 
 }
 
 
@@ -402,15 +585,23 @@ update() {
  
 
    
-    this.bg.tilePositionX += 0.008 * this.enemySpeed;
+    this.bg.tilePositionX += 0.008 * this.baseSpeed;
 
      if (this.cursors.up.isDown) {
-        this.player.setVelocityY(-600);
-    } else if (this.cursors.down.isDown) {
-        this.player.setVelocityY(600);
-    } else {
-        this.player.setVelocity(0);
-    }
+  this.playerVerticalSpeed -= this.playerVerticalAcceleration;
+} else if (this.cursors.down.isDown) {
+  this.playerVerticalSpeed += this.playerVerticalAcceleration;
+} else {
+  this.playerVerticalSpeed *= this.playerVerticalDamping;
+}
+
+this.playerVerticalSpeed = Phaser.Math.Clamp(
+  this.playerVerticalSpeed,
+  -this.playerVerticalMaxSpeed,
+  this.playerVerticalMaxSpeed
+);
+
+this.player.setVelocityY(this.playerVerticalSpeed);
 
       if (this.cursors.left.isDown) {
     this.player.setVelocityX(-200);
@@ -420,6 +611,20 @@ update() {
     this.player.setVelocityX(0);
   }
 
+
+if (this.touchInput.up) {
+  this.playerVerticalSpeed -= this.playerVerticalAcceleration;
+} else if (this.touchInput.down) {
+  this.playerVerticalSpeed += this.playerVerticalAcceleration;
+}
+
+if (this.touchInput.left) {
+  this.player.setVelocityX(-200);
+} else if (this.touchInput.right) {
+  this.player.setVelocityX(200);
+} else if (!this.cursors.left.isDown && !this.cursors.right.isDown) {
+  this.player.setVelocityX(0);
+}
 
     this.enemies.getChildren().forEach(enemy => {
 
@@ -448,8 +653,8 @@ this.seaweedGroup.getChildren().forEach(seaweed => {
 
 var config = {
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: window.innerWidth * window.devicePixelRatio,
+    height: window.innerHeight * window.devicePixelRatio,
     physics: {
         default: 'arcade',
         arcade: {
@@ -458,8 +663,11 @@ var config = {
         }
     },
     scene: [
+        menuScene,
         gameScene,
         gameOver]
+
+    
 };
 
 const game = new Phaser.Game(config);

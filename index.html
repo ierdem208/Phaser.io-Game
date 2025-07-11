@@ -2,17 +2,34 @@
 <html>
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
   <title>Fish game</title>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+  <script src="assets/phaser.js"></script>
   <style>body { margin: 0; }</style>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans&display=swap" rel="stylesheet" />
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    touch-action: none;
+  }
+</style>
+
 </head>
-<body>
+<body style="margin: 0; padding: 0; overflow: hidden;">
+ 
+  <script src="menuScene.js"></script>
   <script src="gameOver.js"></script>
   <script src="gameScene.js"></script>
+  <script src="levelConfig.js"></script>
   
 
 </body>
