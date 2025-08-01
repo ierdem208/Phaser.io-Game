@@ -1,4 +1,6 @@
 
+let bgMusic = null;
+
 class menuScene extends Phaser.Scene {
   constructor() {
     super({
@@ -9,6 +11,7 @@ class menuScene extends Phaser.Scene {
   preload() {
     
     this.load.image('menuBg', LEVEL_CONFIG.background.path);
+    this.load.audio('bgMusic', 'assets/bgMusic.mp3');
   }
 
   create() {
@@ -28,6 +31,14 @@ class menuScene extends Phaser.Scene {
 
 
     this.bg = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, 'menuBg').setOrigin(0);
+
+      if (!bgMusic) {
+    bgMusic = this.sound.add('bgMusic', { loop: true, volume: 0.5 });
+  }
+  
+  if (!bgMusic.isPlaying) {
+    bgMusic.play();
+  }
 
   
     this.title = this.add.text(this.scale.width / 2, this.scale.height / 2 - 100, 'Underwater Escape', {
@@ -70,11 +81,34 @@ class menuScene extends Phaser.Scene {
 
   this.time.delayedCall(100, () => {
     this.scene.start('gameScene');
+   
   });
     });
-
-   
     this.scale.on('resize', this.resizeMenu, this);
+
+  this.creditsBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 150, 'CREDITS', {
+      fontFamily: 'Pixelify Sans',
+      fontSize: this.scale.width < 800 ? '28px' : '48px',
+      backgroundColor: '#00aaff',
+      padding: { left: 20, right: 20, top: 10, bottom: 10 },
+      color: '#ffffff'
+}).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+this.creditsBtn.on('pointerover', () => {
+      this.creditsBtn.setStyle({ backgroundColor: '#0088cc' });
+    });
+
+ this.creditsBtn.on('pointerout', () => {
+      this.creditsBtn.setStyle({ backgroundColor: '#00aaff' });
+    });
+
+
+this.creditsBtn.on('pointerdown', () => {
+  this.scene.start('creditsScene');
+});
+
+
+  
   }
 
   resizeMenu() {

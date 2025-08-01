@@ -18,7 +18,6 @@ constructor(){
 preload() {
 
  
-  
 const assets = LEVEL_CONFIG;
 
   // Background
@@ -55,20 +54,55 @@ const assets = LEVEL_CONFIG;
   this.load.image(buttons[key].key, buttons[key].path);
   }
   
+  this.load.audio('coinSound', 'assets/coinsound.wav');
+  this.load.audio('shootingSound', 'assets/shootingSound.mp3');
+  this.load.audio('gameOverSound', 'assets/gameOverSound.mp3');
+  this.load.audio('bgMusic', 'assets/bgMusic.mp3');
+
+  this.load.spritesheet('electricTrap', 'assets/electricTrap.png', {
+  frameWidth: 96,  // set your frame width here
+  frameHeight: 96  // set your frame height here
+});
 }
+
+
+isMobile() {
+        return this.scale.width < 900 || this.sys.game.device.input.touch;
+    }
+
+getScaleFactor() {
+        const baseWidth = 1200;
+        const currentWidth = this.scale.width;
+        const scaleFactor = currentWidth / baseWidth;
+        
+        // Clamp the scale factor for mobile
+        if (this.isMobile()) {
+            return Math.max(0.3, Math.min(scaleFactor, 0.65));
+        }
+        return Math.max(0.6, Math.min(scaleFactor, 1.2));
+    }
+
+    // Helper function to get mobile-friendly font size
+    getFontSize(baseSize) {
+        const scaleFactor = this.getScaleFactor();
+        return Math.max(16, Math.floor(baseSize * scaleFactor));
+    }
 
 create() {
 
-   this.bg = this.add.tileSprite(0, 0,  this.scale.width, this.scale.height, LEVEL_CONFIG.background.key).setOrigin(0);
-  const isMobile = this.scale.width < 900;
+  const scaleFactor = this.getScaleFactor();
+  const isMobile = this.isMobile();
+
+ this.bg = this.add.tileSprite(0, 0, this.scale.width, this.scale.height, LEVEL_CONFIG.background.key).setOrigin(0,0).setScrollFactor(0);
  
-  window.addEventListener('resize', () => this.resizeGame());
+
+
+ 
+  //window.addEventListener('resize', () => this.resizeGame());
 
   
   
- 
- 
-    this.player = this.physics.add.sprite(this.scale.width * 0.3, this.scale.height * 0.5, LEVEL_CONFIG.misc.hero.key).setScale(isMobile ? LEVEL_CONFIG.misc.hero.scale * 0.6 : LEVEL_CONFIG.misc.hero.scale);
+    this.player = this.physics.add.sprite(this.scale.width * 0.3, this.scale.height * 0.5, LEVEL_CONFIG.misc.hero.key).setScale(LEVEL_CONFIG.misc.hero.scale * scaleFactor);
     this.player.setCollideWorldBounds(true);
 
     this.playerVerticalSpeed = 0;
@@ -87,8 +121,8 @@ create() {
   this.baseSpeed = 300;
   this.maxSpeed = 800;
 
-  const MAX_ENEMIES = 5; 
-  const MIN_GAP = 150;
+  const MAX_ENEMIES = isMobile ? 6 : 10;
+  const MIN_GAP = isMobile ? 100 : 150;
 
   this.anims.create({
   key: 'shark-swim',
@@ -105,11 +139,10 @@ create() {
 
   this.spawnEnemy = () => {
 
-         
         console.log("Enemy spawned");
         if (this.enemies.getLength() >= MAX_ENEMIES) return;
 
-          const canSpawn = this.enemies.getChildren().every(enemy => {
+        const canSpawn = this.enemies.getChildren().every(enemy => {
     return enemy.x < this.scale.width - MIN_GAP;
   });
 
@@ -127,13 +160,13 @@ create() {
         enemy.setVelocityX(-config.speed * this.speedMultiplier);
         enemy.setDepth(1);
         enemy.setImmovable(true);
-        enemy.setScale(isMobile ? config.scale * 0.6 : config.scale); 
+        enemy.setScale(config.scale * scaleFactor); 
       
     };
 
 
   this.time.addEvent({
-    delay: 2000,
+    delay: 1000,
     callback: this.spawnEnemy,
     callbackScope: this,
     loop: true
@@ -154,7 +187,7 @@ this.spawnShark = () => {
   shark.body.allowGravity = false;
   shark.setImmovable(true);
   shark.setDepth(2);
-  shark.setScale(isMobile ? sharkConfig.scale * 0.6 : sharkConfig.scale); 
+  shark.setScale(sharkConfig.scale * scaleFactor); 
 };
 
 this.time.delayedCall(20000, () => {  
@@ -169,8 +202,8 @@ this.time.delayedCall(20000, () => {
 
 this.time.delayedCall(19500, () => {
   const warningText = this.add.text(this.scale.width / 2, 100, 'SHARKS INCOMING!', {
-    fontFamily: this.scale.width < 800 ? '24px' : '40px',
-    fontSize: '50px',
+    fontFamily: 'Pixelify Sans',
+    fontSize: this.getFontSize(64) + 'px',
     fill: '#ff0000'
   }).setOrigin(0.5);
 
@@ -204,7 +237,7 @@ this.spawnJellyfish = () => {
   const key = 'jellyfish';
   const jellyConfig = LEVEL_CONFIG.enemies[key];
   const y = Phaser.Math.Between(100, this.scale.height - 100);
-  const jellyfish = this.enemies.create(this.scale.width + 50, y, jellyConfig.key).setScale(isMobile ? jellyConfig.scale * 0.6 : jellyConfig.scale);
+  const jellyfish = this.enemies.create(this.scale.width + 50, y, jellyConfig.key).setScale(jellyConfig.scale * scaleFactor);
 
   jellyfish.setVelocityX(-jellyConfig.speed * this.speedMultiplier);
   jellyfish.setImmovable(true);
@@ -236,7 +269,7 @@ this.time.addEvent({
   delay: 5000, 
   callback: () => {
     if (this.baseSpeed * this.baseSpeed < this.maxSpeed) {
-      this.speedMultplier += this.speedIncreaseRate;
+      this.speedMultiplier += this.speedIncreaseRate;
        console.log('Speed multiplier increased:', this.speedMultiplier.toFixed(2));
     }
   },
@@ -285,13 +318,18 @@ this.time.addEvent({
 }
 
 
-
   //Coins
 
   this.coins = this.physics.add.group();
   this.coinCollider= this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
 
-  
+  this.coinSound = this.sound.add('coinSound', {
+    volume: 0.5
+  });
+
+  this.gameOverSound = this.sound.add('gameOverSound', {
+  volume: 1 // Volume ranges from 0 (silent) to 1 (full volume)
+});
 
 this.spawnCoinPattern = () => {
   const coinConfig = LEVEL_CONFIG.collectibles.coin;
@@ -339,7 +377,7 @@ this.spawnCoinPattern = () => {
     coin.setVelocityX(-this.baseSpeed * this.speedMultiplier);
     coin.body.allowGravity = false;
     coin.setImmovable(true);
-    coin.setScale(isMobile ? coinConfig.scale * 0.6 : coinConfig.scale);
+    coin.setScale(coinConfig.scale * scaleFactor);
     } else {
 
     }
@@ -369,15 +407,13 @@ this.time.addEvent({
 
 
 
-
-
-
 //shooting bubbles
 this.bubbles = this.physics.add.group();
 this.maxEnergy = 10;
 this.currentEnergy = this.maxEnergy;
 this.energyBarWidth = 200;
 
+this.shootingSound = this.sound.add('shootingSound');
 
 this.physics.add.overlap(this.bubbles, this.enemies, (bubble, enemy) => {
   bubble.destroy();
@@ -428,7 +464,7 @@ this.maxEnergy = 10;
 
   const oysterConf = LEVEL_CONFIG.collectibles.oyster;
   const y = Phaser.Math.Between(100, this.scale.height - 100);
-  const oyster = this.oysters.create(this.scale.width + 50, y, oysterConf.key).setScale(isMobile ? oysterConf.scale * 0.6 : oysterConf.scale);
+  const oyster = this.oysters.create(this.scale.width + 50, y, oysterConf.key).setScale(oysterConf.scale * scaleFactor);
 
   oyster.setVelocityX(-this.baseSpeed * this.speedMultiplier);
   oyster.setImmovable(true);
@@ -455,14 +491,86 @@ this.time.addEvent({
   loop: true
 });
 
-if (this.sys.game.device.input.touch) {
+if (this.isMobile()) {
   this.setupTouchControls();
 }
 
+  this.scale.on('resize', this.handleResize, this);
+
+
+
+//Electric trap
+
+this.traps = this.physics.add.group();
+this.anims.create({
+  key: 'electricTrapAnim',
+  frames: this.anims.generateFrameNumbers('electricTrap', { start: 0, end: 9 }), 
+  repeat: -1 // loop forever
+});
+
+
+  this.physics.add.overlap(this.player, this.traps, this.hitTrap, null, this);
+
+this.time.addEvent({
+  delay: 4000, // every 10 seconds
+  callback: () => {
+    const trapX = this.scale.width * 0.5; // 20% from the left
+const trapY = this.scale.height - 100; // 100px from the bottom
+this.spawnElectricTrap(trapX, trapY);
+
+  },
+  callbackScope: this,
+  loop: true
+});
+
+
+}
+
+
+spawnElectricTrap(x, y) {
+  const scaleFactor = this.getScaleFactor(); // or just 1 if you don't use scaling
+ const trap = this.traps.create(x, y, 'electricTrap');
+ trap.setScale(this.scale.width < 600 ? 0.5 : 4);
+
+  trap.play('electricTrapAnim');
+
+  trap.body.allowGravity = false;
+  trap.setImmovable(true);
+
+ 
+
+  // Remove trap after 3 seconds (or however long you want it active)
+  this.time.delayedCall(2000, () => {
+    trap.destroy();
+  });
+
+  return trap;
+}
+
+hitTrap(player, trap) {
+  console.log("Zapped!");
+  trap.destroy(); // optional if you want one-time trap
+  
+  this.lives--;
+  const gameTime = Math.floor((this.time.now - this.startTime) / 1000);
+
+  if (this.lifeIcons[this.lives]) {
+    this.lifeIcons[this.lives].setTexture(LEVEL_CONFIG.misc.liveEmpty.key);
+  }
+
+  if (this.lives <= 0) {
+    if (this.gameOverSound) this.gameOverSound.play();
+    this.physics.pause();
+    this.scene.pause();
+    this.scene.launch('gameOver', {
+  score: this.score,
+  time: Math.floor(this.time.now / 1000) // game time in seconds
+});
+  }
 }
 
 setupTouchControls() {
-  const isMobile = this.scale.width < 900;
+  const scaleFactor = this.getScaleFactor();
   const buttons = LEVEL_CONFIG.ui.buttons;
 
   this.touchInput = {
@@ -472,46 +580,113 @@ setupTouchControls() {
     right: false
   };
 
-  const createButton = (config, direction) => {
-    const btn = this.add.image(config.x, config.y, config.key)
+  const createBtn = (key, dir) => {
+    const btn = this.add.image(0, 0, buttons[key].key)
       .setInteractive()
-      .setScale(isMobile ? config.scale * 0.6 : config.scale)
       .setScrollFactor(0)
       .setDepth(100)
-      .setAlpha(0.8);
+      .setAlpha(0.8)
+      .setScale(buttons[key].scale * scaleFactor);
 
-    btn.on('pointerdown', () => this.touchInput[direction] = true);
-    btn.on('pointerup', () => this.touchInput[direction] = false);
-    btn.on('pointerout', () => this.touchInput[direction] = false);
+    if (dir) {
+      btn.on('pointerdown', () => this.touchInput[dir] = true);
+      btn.on('pointerup', () => this.touchInput[dir] = false);
+      btn.on('pointerout', () => this.touchInput[dir] = false);
+    }
 
     return btn;
   };
 
-  this.btnUp = createButton(buttons.up, 'up');
-  this.btnDown = createButton(buttons.down, 'down');
-  this.btnLeft = createButton(buttons.left, 'left');
-  this.btnRight = createButton(buttons.right, 'right');
-
-  // Shoot button (fire instantly on press)
-
-    this.btnShoot = this.add.image(buttons.shoot.x, buttons.shoot.y, buttons.shoot.key)
-    .setInteractive()
-    .setScale(buttons.shoot.scale)
-    .setScrollFactor(0)
-    .setDepth(100)
-    .setAlpha(0.8)
-    .setPosition(this.scale.width - 150, this.scale.height - 170);
+  this.btnUp = createBtn('up', 'up');
+  this.btnDown = createBtn('down', 'down');
+  this.btnLeft = createBtn('left', 'left');
+  this.btnRight = createBtn('right', 'right');
+  this.btnShoot = createBtn('shoot'); // no direction, just fires
 
   this.btnShoot.on('pointerdown', () => this.shootBubble());
+
+  this.startTime = this.time.now;
+
+  // Initial resize call to position them right
+  this.handleResize();
 
 }
 
 
+  
+         
+  handleResize() {
+        const scaleFactor = this.getScaleFactor();
+        const isMobile = this.isMobile();
+
+        // Resize background
+        
+
+        // Resize player
+        if (this.player) {
+            this.player.setScale(LEVEL_CONFIG.misc.hero.scale * scaleFactor);
+        }
+
+        // Resize UI elements
+        if (this.scoreText) {
+            this.scoreText.setPosition(
+                this.scale.width - (isMobile ? 20 : 90), 
+                this.scale.height * 0.03
+            );
+            this.scoreText.setStyle({
+                fontSize: this.getFontSize(isMobile ? 40 : 40) + 'px'
+            });
+
+
+        if (this.lifeIcons && this.lifeIcons.length > 0) {
+          const iconSpacing = this.scale.width * 0.05; // space between icons based on screen width
+          const iconStartX = this.scale.width * 0.05; // start a bit from the left
+          const iconY = this.scale.height * 0.07;
+
+          const scaleFactor = this.getScaleFactor();
+
+          for (let i = 0; i < this.lifeIcons.length; i++) {
+            const icon = this.lifeIcons[i];
+            icon.setPosition(iconStartX + i * iconSpacing, iconY);
+            icon.setScale(LEVEL_CONFIG.misc.live.scale * scaleFactor);
+          }
+        }
+        }
+
+        // Resize touch controls
+       // Touch button resizing and repositioning
+              if (this.btnUp) {
+            const scaleFactor = this.getScaleFactor();
+            const margin = 160 * scaleFactor;
+
+            // Left bottom corner
+            const leftX = margin;
+            const bottomY = this.scale.height - margin;
+
+            this.btnLeft.setPosition(leftX, bottomY - margin + 60);
+            this.btnRight.setPosition(leftX + margin, bottomY - margin + 60);
+            this.btnUp.setPosition(leftX + margin / 2, bottomY - margin);
+            this.btnDown.setPosition(leftX + margin / 2, bottomY);
+
+            // Right side for shoot button
+            this.btnShoot.setPosition(this.scale.width - margin, this.scale.height - margin );
+          }
+
+        // Redraw energy bar
+        if (this.energyBar) {
+            this.pixelSize = isMobile ? 30 : 80;
+            this.energyBarX = this.scale.width * 0.5 - (this.maxEnergy * (this.pixelSize + 2)) / 2;
+            this.energyBarY = this.scale.height * 0.05;
+            this.drawEnergyBar();
+        }
+    }
 
 hitEnemy(player, enemy) {
     console.log(" HIT!");
     
+
     enemy.destroy();
+    const gameTime = Math.floor((this.time.now - this.startTime) / 1000);
 
     this.lives--;
 
@@ -520,10 +695,13 @@ hitEnemy(player, enemy) {
     }
 
     if (this.lives <= 0){
-        
+      if (this.gameOverSound) this.gameOverSound.play();
       this.physics.pause();
       this.scene.pause();           
-      this.scene.launch('gameOver'); 
+      this.scene.launch('gameOver', {
+  score: this.score,
+  time: gameTime
+});
     
 
     }
@@ -536,6 +714,9 @@ hitEnemy(player, enemy) {
     this.score += 100;
     this.scoreText.setText('Points: ' + this.score);
 
+      if (this.coinSound) {
+    this.coinSound.play();
+  }
     
 }
 
@@ -555,29 +736,14 @@ hitEnemy(player, enemy) {
   bubble.body.allowGravity = false;
   this.currentEnergy--;
   this.drawEnergyBar();
+  
+     if (this.shootingSound) {
+    this.shootingSound.play();
+  }
+    
  
 }
 
-resizeGame(gameSize, baseSize, displaySize, resolution) {
-  const width = gameSize ? gameSize.width : this.scale.width;
-  const height = gameSize ? gameSize.height : this.scale.height;
-
-  
-
-  if (this.bg) {
-    this.bg.setSize(width, height);
-  }
-
-if (this.btnUp) this.btnUp.setPosition(this.scale.width - 80, this.scale.height - 200);
-if (this.btnDown) this.btnDown.setPosition(this.scale.width - 80, this.scale.height - 100);
-if (this.btnLeft) this.btnLeft.setPosition(80, this.scale.height - 100);
-if (this.btnRight) this.btnRight.setPosition(160, this.scale.height - 100);
-if (this.btnShoot) this.btnShoot.setPosition(width - 100, height - 150);
-
-
-  if (this.scoreText) this.scoreText.setPosition(width - 90, height * 0.03);
-  if (this.energyBar) this.drawEnergyBar(); 
-}
 
 
 
@@ -653,8 +819,7 @@ this.seaweedGroup.getChildren().forEach(seaweed => {
 
 var config = {
     type: Phaser.AUTO,
-    width: window.innerWidth * window.devicePixelRatio,
-    height: window.innerHeight * window.devicePixelRatio,
+    
     physics: {
         default: 'arcade',
         arcade: {
@@ -662,10 +827,28 @@ var config = {
             debug: false
         }
     },
+    scale: {
+        mode: Phaser.Scale.FIT,  // Scale to fit screen
+      
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        parent: 'game-container',
+        width: window.innerWidth,
+        height: window.innerHeight,
+        min: {
+            width: 320,
+            height: 240
+        },
+        max: {
+            width: 1920,
+            height: 1080
+        }
+    },
     scene: [
         menuScene,
         gameScene,
-        gameOver]
+        gameOver,
+        creditsScene
+      ]
 
     
 };

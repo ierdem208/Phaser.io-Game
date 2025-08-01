@@ -12,7 +12,7 @@ const LEVEL_CONFIG = {
       key: 'shark',
       path: 'assets/shark/Walk.png',
       speed: 400,
-      scale: 4,
+      scale: 6,
       anim: 'shark-swim',
       flipX: true,
       isSpriteSheet: true,
@@ -36,7 +36,7 @@ const LEVEL_CONFIG = {
 
   misc: {
     hero: { key: 'hero', path: 'assets/hero.png', scale: 1 },
-    live: { key: 'live', path: 'assets/live.png', scale: 0.8 },
+    live: { key: 'live', path: 'assets/live.png', scale: 1 },
     liveEmpty: { key: 'live-empty', path: 'assets/live-empty.png', scale: 1 },
     seaweed: { key: 'seaweed', path: 'assets/seaweed1.png', scale: 1 },
     yosun: { key: 'yosun', path: 'assets/yosun.png' },
@@ -49,36 +49,31 @@ const LEVEL_CONFIG = {
         key: 'btn-up',
         path: 'assets/topbtn.png',
         x: 160,
-        y: window.innerHeight - 250,
+       
         scale: window.innerWidth < 800 ? 0.6 : 1,
       },
       down: {
         key: 'btn-down',
         path: 'assets/bottombtn.png',
-        x: 160,
-        y: window.innerHeight - 90,
+        
         scale: window.innerWidth < 800 ? 0.6 : 1,
       },
       left: {
         key: 'btn-left',
         path: 'assets/leftbtn.png',
-        x: 75,
-        y: window.innerHeight - 165,
+        
         scale: window.innerWidth < 800 ? 0.6 : 1,
       },
       right: {
         key: 'btn-right',
         path: 'assets/rightbtn.png',
-        x: 250,
-        y: window.innerHeight - 170,
+       
         scale: window.innerWidth < 800 ? 0.6 : 1, 
       },
 
       shoot: {
         key: 'btn-shoot',
         path: 'assets/shootbutton.png',
-        x: window.innerWidth - 150,
-        y: window.innerHeight - 170,
         scale: 0.4,
       },
         
