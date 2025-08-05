@@ -71,13 +71,13 @@ isMobile() {
     }
 
 getScaleFactor() {
-        const baseWidth = 1200;
+        const baseWidth = 1920;
         const currentWidth = this.scale.width;
         const scaleFactor = currentWidth / baseWidth;
         
         // Clamp the scale factor for mobile
         if (this.isMobile()) {
-            return Math.max(0.3, Math.min(scaleFactor, 0.65));
+            return Math.max(0.3, Math.min(scaleFactor, 0.8));
         }
         return Math.max(0.6, Math.min(scaleFactor, 1.2));
     }
@@ -285,7 +285,7 @@ this.time.addEvent({
 
   this.spawnSeaweed = () => {
   const x = this.scale.width + 50; 
-  const y = this.scale.height + 30; 
+  const y = this.scale.height - 40; 
 
   const seaweed = this.seaweedGroup.create(x, y, LEVEL_CONFIG.misc.seaweed.key);
   seaweed.setOrigin(0, 1); 
@@ -436,7 +436,7 @@ this.maxEnergy = 10;
     this.energyBar.clear();
     for (let i = 0; i < this.maxEnergy; i++) {
       if (i < Math.floor(this.currentEnergy)) {
-        this.energyBar.fillStyle(0x0000ff, 1);
+        this.energyBar.fillStyle(0xffd500, 1);
       } else {
         this.energyBar.fillStyle(0x555555, 1);
       }
@@ -491,6 +491,14 @@ this.time.addEvent({
   loop: true
 });
 
+
+this.touchInput = {
+    up: false,
+    down: false,
+    left: false,
+    right: false
+  };
+  
 if (this.isMobile()) {
   this.setupTouchControls();
 }
@@ -512,10 +520,10 @@ this.anims.create({
   this.physics.add.overlap(this.player, this.traps, this.hitTrap, null, this);
 
 this.time.addEvent({
-  delay: 4000, // every 10 seconds
+  delay: 10000, // every 10 seconds
   callback: () => {
-    const trapX = this.scale.width * 0.5; // 20% from the left
-const trapY = this.scale.height - 100; // 100px from the bottom
+  const trapX = this.scale.width * 0.5; // 20% from the left
+const trapY = this.scale.height * 0.7; // 100px from the bottom
 this.spawnElectricTrap(trapX, trapY);
 
   },
@@ -573,12 +581,7 @@ setupTouchControls() {
   const scaleFactor = this.getScaleFactor();
   const buttons = LEVEL_CONFIG.ui.buttons;
 
-  this.touchInput = {
-    up: false,
-    down: false,
-    left: false,
-    right: false
-  };
+  
 
   const createBtn = (key, dir) => {
     const btn = this.add.image(0, 0, buttons[key].key)
@@ -620,7 +623,9 @@ setupTouchControls() {
         const isMobile = this.isMobile();
 
         // Resize background
-        
+if (this.bg) {
+    this.bg.setSize(this.scale.width, this.scale.height);
+  }        
 
         // Resize player
         if (this.player) {
@@ -681,6 +686,7 @@ setupTouchControls() {
         }
     }
 
+    
 hitEnemy(player, enemy) {
     console.log(" HIT!");
     
@@ -832,8 +838,8 @@ var config = {
       
         autoCenter: Phaser.Scale.CENTER_BOTH,
         parent: 'game-container',
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: 1920,
+        height: 1000,
         min: {
             width: 320,
             height: 240

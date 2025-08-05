@@ -45,23 +45,23 @@ class CreditsScene extends Phaser.Scene {
   addLine('© 2025 Digilayf Bilisim. All Rights Reserved.', 16, '#cccccc', 60);
 
   // Back to Menu button
-  const backButton = this.add.text(centerX, currentY, 'BACK TO MENU', {
+  this.backButton = this.add.text(centerX, currentY, 'BACK TO MENU', {
        fontFamily: 'Pixelify Sans',
       fontSize: this.scale.width < 800 ? '28px' : '48px',
       backgroundColor: '#00aaff',
       padding: { left: 20, right: 20, top: 10, bottom: 10 },
       color: '#ffffff'
-  }).setOrigin(0.5).setInteractive();
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-  backButton.on('pointerover', () => {
+  this.backButton.on('pointerover', () => {
       this.creditsBtn.setStyle({ backgroundColor: '#0088cc' });
     });
 
- backButton.on('pointerout', () => {
+ this.backButton.on('pointerout', () => {
       this.creditsBtn.setStyle({ backgroundColor: '#00aaff' });
     });
 
-  backButton.on('pointerdown', () => {
+  this.backButton.on('pointerdown', () => {
     this.scene.start('menuScene');
   });
 }

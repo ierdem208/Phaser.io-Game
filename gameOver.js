@@ -30,7 +30,7 @@ const scale = this.getScaleFactor();
       fill: '#00ffff',
       backgroundColor: '#000',
       padding: { x: 20, y: 10 }
-    }).setOrigin(0.5).setInteractive();
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     this.time.addEvent({
   delay: 400,

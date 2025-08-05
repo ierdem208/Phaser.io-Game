@@ -1,3 +1,4 @@
+const { ipcRenderer } = require('electron');
 
 let bgMusic = null;
 
@@ -108,6 +109,28 @@ this.creditsBtn.on('pointerdown', () => {
 });
 
 
+  this.exitBtn = this.add.text(this.scale.width / 2, this.scale.height / 2 + 250, 'EXIT GAME', {
+      fontFamily: 'Pixelify Sans',
+      fontSize: this.scale.width < 800 ? '28px' : '48px',
+      backgroundColor: '#00aaff',
+      padding: { left: 20, right: 20, top: 10, bottom: 10 },
+      color: '#ffffff'
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+  this.exitBtn.on('pointerover', () => {
+      this.exitBtn.setStyle({ backgroundColor: '#0088cc' });
+    });
+
+ this.exitBtn.on('pointerout', () => {
+      this.exitBtn.setStyle({ backgroundColor: '#00aaff' });
+    });
+
+
+  this.exitBtn.on('pointerdown', () => {
+    // We'll fill this in later to close the app
+    this.exitApp();
+  });
+
   
   }
 
@@ -123,6 +146,15 @@ this.creditsBtn.on('pointerdown', () => {
     if (this.startButton) {
       this.startButton.setPosition(this.scale.width / 2, this.scale.height / 2 + 50);
     }
+  }
+
+   exitApp() {
+    // Using ipcRenderer to send message to main process
+    
+    ipcRenderer.send('app-close');
+    
+    // Or if your app setup allows:
+    // window.close();
   }
 
   update() {
